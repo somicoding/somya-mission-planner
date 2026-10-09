@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drone Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 500px; width: 100%; }
+        #info { font-family: monospace; padding: 10px; background: #f0f0f0; }
+        #status { padding: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Live Drone Tracker</h2>
+    <div id="status">Connecting to bridge...</div>
+    <div id="info">Waiting for telemetry...</div>
+    <div id="map"></div>
+
+    <script>
+        const map = L.map('map').setView([0, 0], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let droneMarker = null;
+        let firstFix = true;
+
+        // Connect to your Python bridge
+        const socket = new WebSocket('ws://127.0.0.1:8765');
+
+        socket.onopen = () => {
+            document.getElementById('status').innerText = "✅ Connected to bridge";
+            document.getElementById('status').style.color = "green";
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById('info').innerText = 
+                `Lat: ${data.lat.toFixed(6)}, Lon: ${data.lon.toFixed(6)}, Alt: ${data.alt.toFixed(2)}m`;
+
+            if (data.lat !== 0 && data.lon !== 0) {
+                if (firstFix) {
+                    map.setView([data.lat, data.lon], 17);
+                    droneMarker = L.marker([data.lat, data.lon]).addTo(map);
+                    firstFix = false;
+                } else if (droneMarker) {
+                    droneMarker.setLatLng([data.lat, data.lon]);
+                }
+            }
+        };
+
+        socket.onerror = (err) => {
+            document.getElementById('status').innerText = "❌ WebSocket error";
+            document.getElementById('status').style.color = "red";
+            console.error(err);
+        };
+
+        socket.onclose = () => {
+            document.getElementById('status').innerText = "🔌 Disconnected from bridge";
+            document.getElementById('status').style.color = "orange";
+        };
+    </script>
+</body>
+</html>

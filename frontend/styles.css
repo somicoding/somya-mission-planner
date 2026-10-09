@@ -1,0 +1,890 @@
+/* ==============================================================================
+   AERO-GCS Tactical Ground Control Station - Modern Aerospace UI
+   ============================================================================== */
+
+:root {
+    --bg-primary: #070a10;
+    --bg-secondary: #0c121e;
+    --bg-panel: rgba(13, 20, 33, 0.85);
+    --border-panel: rgba(30, 48, 77, 0.6);
+    --border-highlight: rgba(0, 242, 254, 0.3);
+    
+    --accent-cyan: #00f2fe;
+    --accent-blue: #4facfe;
+    --accent-emerald: #00e676;
+    --accent-amber: #ffb300;
+    --accent-crimson: #ff334b;
+    --accent-purple: #8b5cf6;
+    
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    --font-ui: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    
+    --shadow-glow-cyan: 0 0 15px rgba(0, 242, 254, 0.25);
+    --shadow-glow-emerald: 0 0 15px rgba(0, 230, 118, 0.25);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.05) 0%, transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* Master HUD Container */
+.hud-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* ==============================================================================
+   Top Navigation Header
+   ============================================================================== */
+.hud-header {
+    height: 64px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-panel);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.brand-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-radar {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent-cyan);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: var(--shadow-glow-cyan);
+}
+
+.logo-radar::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    background: var(--accent-cyan);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.brand-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.accent-text {
+    color: var(--accent-cyan);
+}
+
+.system-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border-panel);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-amber);
+    box-shadow: 0 0 8px var(--accent-amber);
+    animation: pulse 1.5s infinite;
+}
+
+.system-status-pill.online .status-dot {
+    background: var(--accent-emerald);
+    box-shadow: 0 0 10px var(--accent-emerald);
+}
+
+.system-status-pill.offline .status-dot {
+    background: var(--accent-crimson);
+    box-shadow: 0 0 10px var(--accent-crimson);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Flight Mode & Vehicle Selector */
+.flight-mode-strip {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.drone-select-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.hud-select {
+    background: rgba(13, 20, 33, 0.9);
+    border: 1px solid var(--border-panel);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.hud-select:hover, .hud-select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: var(--shadow-glow-cyan);
+}
+
+.badge-group {
+    display: flex;
+    gap: 8px;
+}
+
+.hud-badge {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: 1px solid transparent;
+}
+
+.mode-badge {
+    background: rgba(0, 242, 254, 0.12);
+    border-color: rgba(0, 242, 254, 0.4);
+    color: var(--accent-cyan);
+}
+
+.armed-badge.armed {
+    background: rgba(255, 51, 75, 0.2);
+    border-color: var(--accent-crimson);
+    color: var(--accent-crimson);
+    animation: pulse 2s infinite;
+}
+
+.armed-badge.disarmed {
+    background: rgba(100, 116, 139, 0.2);
+    border-color: rgba(100, 116, 139, 0.4);
+    color: var(--text-secondary);
+}
+
+.land-badge {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: var(--accent-purple);
+}
+
+/* Meta Section */
+.telemetry-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.meta-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.meta-val {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+
+.meta-val small {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+/* ==============================================================================
+   Main Workspace Layout
+   ============================================================================== */
+.hud-main-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 380px 1fr 340px;
+    gap: 14px;
+    padding: 14px;
+    overflow: hidden;
+}
+
+/* Glassmorphic Panel Container */
+.hud-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-panel);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(16px);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.panel-header {
+    height: 44px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-panel);
+    background: rgba(18, 28, 45, 0.6);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+}
+
+.panel-icon {
+    width: 16px;
+    height: 16px;
+    stroke: var(--accent-cyan);
+}
+
+.hud-subtext {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* ==============================================================================
+   Left Panel: Artificial Horizon & PFD
+   ============================================================================== */
+.pfd-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.horizon-wrapper {
+    position: relative;
+    height: 260px;
+    background: #000;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-panel);
+}
+
+#horizonCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.pfd-overlay-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 2px;
+    background: rgba(255, 235, 59, 0.8);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.pfd-overlay-crosshair::before,
+.pfd-overlay-crosshair::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 235, 59, 0.8);
+    top: -6px;
+}
+.pfd-overlay-crosshair::before { left: -14px; border-right: none; }
+.pfd-overlay-crosshair::after { right: -14px; border-left: none; }
+
+/* Airspeed / Altitude Tapes */
+.tape-strip {
+    position: absolute;
+    top: 20px;
+    bottom: 40px;
+    width: 54px;
+    background: rgba(10, 15, 26, 0.7);
+    border: 1px solid var(--border-panel);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+    z-index: 15;
+}
+
+.tape-left { left: 10px; border-radius: 6px 0 0 6px; }
+.tape-right { right: 10px; border-radius: 0 6px 6px 0; }
+
+.tape-title {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.tape-value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+
+.tape-unit {
+    font-size: 8px;
+    color: var(--text-secondary);
+}
+
+/* Compass Ribbon */
+.compass-ribbon {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: rgba(8, 12, 22, 0.9);
+    border-top: 1px solid var(--border-panel);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+
+.compass-marker {
+    color: var(--accent-amber);
+    margin-right: 6px;
+    font-size: 10px;
+}
+
+/* Gauges Subgrid */
+.gauges-subgrid {
+    flex: 1;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.gauge-card {
+    background: rgba(15, 23, 38, 0.6);
+    border: 1px solid var(--border-panel);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.gauge-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.gauge-metric {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 4px 0;
+}
+
+.gauge-metric small {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.gauge-bar-bg {
+    height: 6px;
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.gauge-bar-fill {
+    height: 100%;
+    background: var(--accent-cyan);
+    transition: width 0.15s ease-out;
+}
+
+.gauge-bar-fill.emerald { background: var(--accent-emerald); }
+.gauge-bar-fill.amber { background: var(--accent-amber); }
+.gauge-bar-fill.purple { background: var(--accent-purple); }
+
+/* ==============================================================================
+   Center Panel: Tactical Map
+   ============================================================================== */
+.map-panel {
+    position: relative;
+}
+
+.map-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.coord-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-cyan);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-panel);
+}
+
+.map-view {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    background: #090e17;
+}
+
+/* Custom Leaflet Dark Elements */
+.leaflet-container {
+    background: #090e17 !important;
+}
+
+/* Drone Heading Icon */
+.drone-map-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s linear;
+}
+
+.drone-svg {
+    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.8));
+}
+
+/* ==============================================================================
+   Right Panel: Subsystems & Terminal
+   ============================================================================== */
+.status-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.subsystem-box {
+    background: rgba(15, 23, 38, 0.65);
+    border: 1px solid var(--border-panel);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.box-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.box-icon {
+    width: 14px;
+    height: 14px;
+    stroke: var(--accent-cyan);
+}
+
+.battery-pct-badge {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-emerald);
+}
+
+.battery-level-container {
+    height: 8px;
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.battery-level-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ff334b, #ffb300 40%, #00e676 80%);
+    box-shadow: var(--shadow-glow-emerald);
+    transition: width 0.3s ease;
+}
+
+.metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.m-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.m-val {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.m-val.highlight {
+    color: var(--accent-cyan);
+}
+
+.m-val small {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.cell-voltages-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.cell-pill {
+    background: rgba(11, 19, 32, 0.8);
+    border: 1px solid var(--border-panel);
+    border-radius: 4px;
+    padding: 3px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.cell-pill span {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+/* GPS & RSSI */
+.gps-fix-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(0, 230, 118, 0.15);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.rssi-bar-bg {
+    height: 5px;
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rssi-bar-fill {
+    height: 100%;
+    background: var(--accent-cyan);
+    transition: width 0.2s ease;
+}
+
+/* Terminal Log View */
+.log-box {
+    flex: 1;
+    min-height: 180px;
+}
+
+.terminal-view {
+    flex: 1;
+    background: #05080e;
+    border: 1px solid rgba(26, 38, 59, 0.8);
+    border-radius: 6px;
+    padding: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+    max-height: 220px;
+}
+
+.term-line {
+    line-height: 1.4;
+    word-break: break-all;
+    color: var(--text-muted);
+}
+
+.term-line.info-line { color: var(--accent-cyan); }
+.term-line.attitude { color: #818cf8; }
+.term-line.position { color: #34d399; }
+.term-line.status { color: #fbbf24; }
+.term-line.heartbeat { color: #f472b6; }
+
+/* Buttons */
+.hud-btn {
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 6px 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    color: #070a10;
+}
+
+.primary-btn:hover {
+    box-shadow: var(--shadow-glow-cyan);
+    transform: translateY(-1px);
+}
+
+.secondary-btn {
+    background: rgba(30, 48, 77, 0.6);
+    color: var(--text-primary);
+    border: 1px solid var(--border-panel);
+}
+
+.secondary-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.hud-mini-btn {
+    background: rgba(20, 32, 50, 0.8);
+    border: 1px solid var(--border-panel);
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all 0.15s;
+}
+
+.hud-mini-btn:hover {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+}
+
+/* ==============================================================================
+   Modal / Statistics Drawer
+   ============================================================================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-panel);
+    border-radius: 12px;
+    width: 820px;
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+.modal-header {
+    height: 52px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-panel);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.close-btn:hover { color: var(--accent-crimson); }
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.stat-card {
+    background: rgba(15, 23, 40, 0.7);
+    border: 1px solid var(--border-panel);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+}
+
+.stat-num {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    margin-bottom: 4px;
+}
+
+.stat-desc {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.history-query-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.history-table-container {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--border-panel);
+    border-radius: 6px;
+}
+
+.hud-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-align: left;
+}
+
+.hud-table th {
+    background: rgba(18, 28, 45, 0.9);
+    padding: 8px 12px;
+    color: var(--text-secondary);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border-panel);
+    position: sticky;
+    top: 0;
+}
+
+.hud-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(30, 48, 77, 0.4);
+    color: var(--text-primary);
+}
+
+.hud-table tr:hover {
+    background: rgba(0, 242, 254, 0.05);
+}

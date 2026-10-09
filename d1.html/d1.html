@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixhawk · Telemetry & Drone Control</title>
+    <link rel="stylesheet" href="d1.css">
+</head>
+<body>
+
+<div class="card">
+
+    
+    <div class="header">
+        <h1> PIXHAWK TELEMETRY</h1>
+        <div class="status-badge">
+            <span class="dot" id="statusDot"></span>
+            <span id="connectionStatusText">Disconnected</span>
+        </div>
+    </div>
+
+    <!-- X Y Z -->
+    <div class="coord-grid">
+        <div class="coord-box">
+            <div class="label">X COORDINATE</div>
+            <div class="value" id="xValue">--</div>
+            <div class="sub">Longitude (°)</div>
+        </div>
+        <div class="coord-box">
+            <div class="label">Y COORDINATE</div>
+            <div class="value" id="yValue">--</div>
+            <div class="sub">Latitude (°)</div>
+        </div>
+        <div class="coord-box">
+            <div class="label">Z COORDINATE</div>
+            <div class="value" id="zValue">--</div>
+            <div class="sub">Altitude (m)</div>
+        </div>
+    </div>
+
+    <!-- Speed, Takeoff, Landing -->
+    <div class="control-row">
+        <!-- Speed box -->
+        <div class="control-card">
+            <div class="label">⏱ SPEED</div>
+            <div class="speed-value" id="speedDisplay">0.0 <span class="speed-unit">m/s</span></div>
+            <div style="font-size: 0.55rem; color: #4e6175; margin-top: 4px;">ground speed</div>
+        </div>
+
+        <!-- Takeoff button -->
+        <div class="control-card">
+            <div class="label"> TAKEOFF</div>
+            <button class="btn-action takeoff" id="takeoffBtn">ARM & RISE</button>
+            <div style="font-size: 0.5rem; color: #4e6175; margin-top: 5px;">altitude </div>
+        </div>
+
+        <!-- Landing button -->
+        <div class="control-card">
+            <div class="label"> LAND</div>
+            <button class="btn-action land" id="landBtn">LAND</button>
+            <div style="font-size: 0.5rem; color: #4e6175; margin-top: 5px;">landing</div>
+        </div>
+    </div>
+
+    <!-- connection panel -->
+    <div class="connection-panel">
+        <span class="ws-url">ws://127.0.0.1:8765</span>
+        <div class="conn-buttons">
+            <button class="conn-btn connect" id="connectBtn">Connect</button>
+            <button class="conn-btn disconnect" id="disconnectBtn">Disconnect</button>
+        </div>
+        <div class="gps-status" id="gpsStatus">GPS Coordinates: Waiting for connection...</div>
+    </div>
+
+    
+</div>
+<script src="d1.js"></script>

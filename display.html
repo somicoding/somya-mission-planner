@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="display.css">
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard">
+            <div class="header">
+                <h1> PIXHAWK TELEMETRY</h1>
+                <p>Real-time X, Y, Z Position Data</p>
+                <div class="status-badge" id="statusBadge">
+                    <i class="fa-solid fa-plug-circle-xmark"></i>
+                    Disconnected
+                </div>
+            </div>
+
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon"><i class="fa-regular fa-x"></i></div>
+                    <div class="card-label">X COORDINATE</div>
+                    <div class="card-value" id="xValue">--</div>
+                    <div class="card-unit">Longitude (°)</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i class="fa-regular fa-y"></i></div>
+                    <div class="card-label">Y COORDINATE</div>
+                    <div class="card-value" id="yValue">--</div>
+                    <div class="card-unit">Latitude (°)</div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i class="fa-regular fa-z"></i></div>
+                    <div class="card-label">Z COORDINATE</div>
+                    <div class="card-value" id="zValue">--</div>
+                    <div class="card-unit">Altitude (m)</div>
+                </div>
+            </div> 
+            <div class="connection-panel">
+                <div class="connection-input">
+                    <input type="text" id="connectionUrl" placeholder="WebSocket URL"value="ws://127.0.0.1:8766">
+                    <button id="connectBtn"><i class="fa-solid fa-plug-circle-check"></i>Connect</button>
+                    <button id="disconnectBtn" class="disconnect-btn"><i class="fa-solid fa-plug-circle-xmark"></i> Disconnect</button>
+                </div>
+                <div class="error-message" id="errorMsg"></div>
+                <div class="map-preview" id="mapPreview">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    GPS Coordinates: Waiting for connection...
+                </div>
+            </div>
+        </div>
+    </div>        
+</body>
+<script src="bridge.js"></script>
+<script src="display.js"></script>
+</html>

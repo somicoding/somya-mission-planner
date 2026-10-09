@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Next-generation tactical UAV ground station with real-time MAVLink telemetry streaming, primary flight display, and live tracking.">
+    <title>AERO-GCS | Tactical UAV Telemetry System</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="hud-container">
+        <!-- Top Navigation Bar -->
+        <header class="hud-header">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <span class="logo-radar"></span>
+                    <span class="brand-title">AERO<span class="accent-text">GCS</span></span>
+                </div>
+                <div class="system-status-pill" id="systemStatusPill">
+                    <span class="status-dot"></span>
+                    <span id="connectionStatusText">CONNECTING...</span>
+                </div>
+            </div>
+
+            <div class="flight-mode-strip">
+                <div class="drone-select-wrapper">
+                    <label for="droneSelector">VEHICLE:</label>
+                    <select id="droneSelector" class="hud-select">
+                        <option value="">Searching for drones...</option>
+                    </select>
+                </div>
+                <div class="badge-group">
+                    <div class="hud-badge mode-badge" id="flightModeBadge">MODE: DISCONNECTED</div>
+                    <div class="hud-badge armed-badge disarmed" id="armedBadge">DISARMED</div>
+                    <div class="hud-badge land-badge" id="landedBadge">GROUND</div>
+                </div>
+            </div>
+
+            <div class="telemetry-meta">
+                <div class="meta-item">
+                    <span class="meta-label">STREAM RATE</span>
+                    <span class="meta-val" id="streamRateVal">0.0 <small>Hz</small></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">PACKETS</span>
+                    <span class="meta-val" id="packetCountVal">0</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">UPTIME</span>
+                    <span class="meta-val" id="flightTimerVal">00:00:00</span>
+                </div>
+                <button id="historyModalBtn" class="hud-btn secondary-btn" title="View flight statistics & logs">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    STATS
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="hud-main-grid">
+            
+            <!-- Left Column: Primary Flight Display (PFD) & HUD Dynamics -->
+            <section class="hud-panel pfd-panel" aria-label="Primary Flight Display">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
+                        ARTIFICIAL HORIZON / PFD
+                    </div>
+                    <span class="hud-subtext" id="attitudeAngleText">R: 0.0° | P: 0.0°</span>
+                </div>
+                
+                <div class="horizon-wrapper">
+                    <canvas id="horizonCanvas" width="360" height="260"></canvas>
+                    <div class="pfd-overlay-crosshair"></div>
+                    
+                    <!-- Airspeed Tape on Left of Horizon -->
+                    <div class="tape-strip tape-left">
+                        <span class="tape-title">IAS</span>
+                        <span class="tape-value" id="pfdAirspeedVal">0.0</span>
+                        <span class="tape-unit">m/s</span>
+                    </div>
+
+                    <!-- Altitude Tape on Right of Horizon -->
+                    <div class="tape-strip tape-right">
+                        <span class="tape-title">ALT</span>
+                        <span class="tape-value" id="pfdAltitudeVal">0.0</span>
+                        <span class="tape-unit">m MSL</span>
+                    </div>
+
+                    <!-- Compass Heading Ribbon on Bottom of Horizon -->
+                    <div class="compass-ribbon">
+                        <div class="compass-marker">▼</div>
+                        <div class="compass-tape" id="compassTape">HDG: <span id="headingVal">000</span>°</div>
+                    </div>
+                </div>
+
+                <!-- Dynamics & VFR Gauges -->
+                <div class="gauges-subgrid">
+                    <div class="gauge-card">
+                        <div class="gauge-label">GROUND SPEED</div>
+                        <div class="gauge-metric"><span id="groundspeedVal">0.0</span> <small>m/s</small></div>
+                        <div class="gauge-bar-bg"><div class="gauge-bar-fill" id="groundspeedBar" style="width: 0%;"></div></div>
+                    </div>
+
+                    <div class="gauge-card">
+                        <div class="gauge-label">RELATIVE ALT (AGL)</div>
+                        <div class="gauge-metric"><span id="relativeAltVal">0.0</span> <small>m</small></div>
+                        <div class="gauge-bar-bg"><div class="gauge-bar-fill emerald" id="altitudeBar" style="width: 0%;"></div></div>
+                    </div>
+
+                    <div class="gauge-card">
+                        <div class="gauge-label">VERTICAL SPEED</div>
+                        <div class="gauge-metric"><span id="climbVal">+0.0</span> <small>m/s</small></div>
+                        <div class="gauge-bar-bg"><div class="gauge-bar-fill amber" id="climbBar" style="width: 50%;"></div></div>
+                    </div>
+
+                    <div class="gauge-card">
+                        <div class="gauge-label">THROTTLE</div>
+                        <div class="gauge-metric"><span id="throttleVal">0</span> <small>%</small></div>
+                        <div class="gauge-bar-bg"><div class="gauge-bar-fill purple" id="throttleBar" style="width: 0%;"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Column: Live Tactical Map -->
+            <section class="hud-panel map-panel" aria-label="Tactical Map">
+                <div class="panel-header map-header">
+                    <div class="panel-title">
+                        <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                        LIVE TACTICAL MAP
+                    </div>
+                    <div class="map-controls">
+                        <button id="centerDroneBtn" class="hud-mini-btn" title="Recenter on Drone">CENTER</button>
+                        <button id="clearPathBtn" class="hud-mini-btn" title="Clear Flight Path">CLEAR PATH</button>
+                        <span class="coord-pill" id="coordPill">LAT: --.------ | LON: --.------</span>
+                    </div>
+                </div>
+
+                <div id="droneMap" class="map-view"></div>
+            </section>
+
+            <!-- Right Column: Subsystems, Power & Live Feed -->
+            <section class="hud-panel status-panel" aria-label="Vehicle Subsystems">
+                <!-- Power & Battery Card -->
+                <div class="subsystem-box">
+                    <div class="box-header">
+                        <div class="box-title">
+                            <svg class="box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="6" width="18" height="12" rx="2"/><path d="M23 10v4"/></svg>
+                            POWER SYSTEM
+                        </div>
+                        <span class="battery-pct-badge" id="batteryPctBadge">--%</span>
+                    </div>
+                    <div class="battery-level-container">
+                        <div class="battery-level-bar" id="batteryLevelBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="metrics-row">
+                        <div class="metric-item">
+                            <span class="m-label">VOLTAGE</span>
+                            <span class="m-val" id="voltageVal">--.- <small>V</small></span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="m-label">CURRENT</span>
+                            <span class="m-val" id="currentVal">--.- <small>A</small></span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="m-label">TEMP</span>
+                            <span class="m-val" id="batteryTempVal">--.- <small>°C</small></span>
+                        </div>
+                    </div>
+                    <!-- Cell Voltages -->
+                    <div class="cell-voltages-grid" id="cellVoltagesGrid">
+                        <div class="cell-pill">C1: <span>--</span>V</div>
+                        <div class="cell-pill">C2: <span>--</span>V</div>
+                        <div class="cell-pill">C3: <span>--</span>V</div>
+                        <div class="cell-pill">C4: <span>--</span>V</div>
+                    </div>
+                </div>
+
+                <!-- GPS & Radio Link Card -->
+                <div class="subsystem-box">
+                    <div class="box-header">
+                        <div class="box-title">
+                            <svg class="box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4.93 4.93a10 10 0 0114.14 0M7.76 7.76a6 6 0 018.48 0M10.59 10.59a2 2 0 012.82 0M12 18v3"/></svg>
+                            NAVIGATION & LINK
+                        </div>
+                        <span class="gps-fix-badge" id="gpsFixBadge">NO FIX</span>
+                    </div>
+                    <div class="metrics-row">
+                        <div class="metric-item">
+                            <span class="m-label">SATELLITES</span>
+                            <span class="m-val highlight" id="satsVal">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="m-label">HDOP</span>
+                            <span class="m-val" id="hdopVal">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="m-label">RC RSSI</span>
+                            <span class="m-val" id="rssiVal">--%</span>
+                        </div>
+                    </div>
+                    <div class="rssi-bar-bg">
+                        <div class="rssi-bar-fill" id="rssiBar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Live MAVLink Packet Terminal -->
+                <div class="subsystem-box log-box">
+                    <div class="box-header">
+                        <div class="box-title">
+                            <svg class="box-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                            LIVE MAVLINK PACKET STREAM
+                        </div>
+                        <button id="pauseLogBtn" class="hud-mini-btn">PAUSE</button>
+                    </div>
+                    <div class="terminal-view" id="packetTerminal">
+                        <div class="term-line info-line">> Telemetry stream initialized. Awaiting packets...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Flight Statistics Modal / Drawer -->
+        <div class="modal-backdrop" id="statsModal" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>FLIGHT MISSION SUMMARY</h3>
+                    <button id="closeModalBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-num" id="statDuration">--</div>
+                            <div class="stat-desc">FLIGHT DURATION</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-num" id="statMaxAlt">-- m</div>
+                            <div class="stat-desc">MAX ALTITUDE</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-num" id="statMaxSpeed">-- m/s</div>
+                            <div class="stat-desc">MAX SPEED</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-num" id="statTotalPts">--</div>
+                            <div class="stat-desc">POINTS LOGGED</div>
+                        </div>
+                    </div>
+                    <div class="history-query-section">
+                        <h4>TIME-SERIES HISTORY LOGS</h4>
+                        <div class="history-actions">
+                            <button id="fetchHistoryBtn" class="hud-btn primary-btn">FETCH RECENT 100 RECORDS</button>
+                        </div>
+                        <div class="history-table-container">
+                            <table class="hud-table" id="historyTable">
+                                <thead>
+                                    <tr>
+                                        <th>TIME</th>
+                                        <th>TYPE</th>
+                                        <th>LAT</th>
+                                        <th>LON</th>
+                                        <th>ALT (m)</th>
+                                        <th>SPD (m/s)</th>
+                                        <th>BAT (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="7" style="text-align: center;">Click fetch to load historical points.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Time-Series Database: TimescaleDB / PostgreSQL 16
+  # ============================================================================
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: telemetry_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: telemetry_user
+      POSTGRES_PASSWORD: telemetry_pass
+      POSTGRES_DB: telemetry_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemetry_user -d telemetry_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - telemetry_net
+
+  # ============================================================================
+  # Telemetry Backend Service (FastAPI + Asyncpg + Live WebSockets)
+  # ============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: telemetry_backend
+    restart: unless-stopped
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://telemetry_user:telemetry_pass@timescaledb:5432/telemetry_db
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      API_KEY: drone_telemetry_secure_token_2026
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    networks:
+      - telemetry_net
+
+  # ============================================================================
+  # Telemetry Collector Service (MAVLink Parser & Ingestion Client)
+  # ============================================================================
+  collector:
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
+    container_name: telemetry_collector
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      DRONE_ID: DRONE-ALPHA-01
+      # Connect to simulator in docker network
+      FC_CONNECTION_STRING: udpin:0.0.0.0:14550
+      BACKEND_WS_URL: ws://backend:8000/api/v1/telemetry/ws/ingest
+      API_KEY: drone_telemetry_secure_token_2026
+      LOG_LEVEL: INFO
+    ports:
+      - "14550:14550/udp"
+    networks:
+      - telemetry_net
+
+  # ============================================================================
+  # Simulated Drone (MAVLink v2 SITL Feeder for instant demonstration)
+  # ============================================================================
+  sim:
+    build:
+      context: .
+      dockerfile: sim/Dockerfile
+    container_name: telemetry_sim
+    restart: unless-stopped
+    depends_on:
+      - collector
+    environment:
+      SIM_TARGET_HOST: collector
+      SIM_TARGET_PORT: 14550
+    networks:
+      - telemetry_net
+
+volumes:
+  timescale_data:
+    driver: local
+
+networks:
+  telemetry_net:
+    driver: bridge
